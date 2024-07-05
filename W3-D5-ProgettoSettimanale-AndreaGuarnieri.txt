@@ -1,0 +1,231 @@
+
+-- Ho redatto il codice accogliendo i suoi suggerimenti riguardo alla possibilità che in un singolo verbale si possano
+-- contestare più violazioni e per tanto ho implementato una quarta tabella per consentire di istaurare una relazione
+-- da molti a molti.
+-- Ho fatto un popolamento fittizio delle tabelle per verificare i corretti risultati delle varie query
+
+
+
+----------------------------   	CREAZIONI TABELLE   -------------------------------------
+
+-- Creazione della tabella ANAGRAFICA
+-- I campi relativi all'indirizzo in questa tabella possono anche essere NULL in quanto ci possono essere problemi da
+-- parte della polizia municipale a reperire tale indirizzo. Gli altri sono obbligatori.
+
+CREATE TABLE ANAGRAFICA (
+    Idanagrafica INT PRIMARY KEY, -- Identificatore univoco per ogni anagrafica
+    Cognome NVARCHAR(50) NOT NULL, -- Cognome della persona
+    Nome NVARCHAR(50) NOT NULL, -- Nome della persona
+    Indirizzo NVARCHAR(100), -- Indirizzo della persona (facoltativo)
+    Città NVARCHAR(50), -- Città di residenza (facoltativo)
+    CAP NVARCHAR(5), -- Codice di avviamento postale (facoltativo)
+    Cod_Fisc NVARCHAR(16) NOT NULL -- Codice fiscale della persona
+);
+
+
+-- Creazione della tabella TIPO_VIOLAZIONE
+-- Tutti i campi sono obbligatori, non ci possono essere NULL
+
+CREATE TABLE TIPO_VIOLAZIONE (
+    Idviolazione INT PRIMARY KEY, -- Identificatore univoco per ogni tipo di violazione
+    Descrizione NVARCHAR(100) NOT NULL, -- Descrizione della violazione
+    Importo DECIMAL(10, 2) NOT NULL, -- Importo della sanzione per la violazione
+    DecurtamentoPunti INT NOT NULL -- Punti decurtati dalla patente per la violazione
+);
+
+
+-- Creazione della tabella VERBALE
+-- L'unico campo che può essere NULL è DataTrascrizioneVerbale in quanto il verbale non è stato ancora elaborato
+
+CREATE TABLE VERBALE (
+    Idverbale INT PRIMARY KEY, -- Identificatore univoco per ogni verbale
+    DataViolazione DATETIME2 NOT NULL, -- Data e ora della violazione
+    IndirizzoViolazione NVARCHAR(100) NOT NULL, -- Indirizzo dove è avvenuta la violazione
+    Nominativo_Agente NVARCHAR(50) NOT NULL, -- Nome dell'agente che ha redatto il verbale
+    DataTrascrizioneVerbale DATETIME2, -- Data di trascrizione del verbale (facoltativo)
+    Idanagrafica INT NOT NULL, -- Riferimento all'anagrafica della persona che ha commesso la violazione
+    FOREIGN KEY (Idanagrafica) REFERENCES ANAGRAFICA(Idanagrafica) -- Vincolo di chiave esterna verso la tabella ANAGRAFICA
+);
+
+
+-- Creazione della tabella VERBALE_VIOLAZIONI
+-- Ho creato questa quarta tabella su suo suggerimento in quanto concordo con lei che in un verbale ci possono essere più violazioni
+-- e per questo motivo si rende necessaria una tabella aggiuntiva per gestire la relazione molti a molti.
+
+CREATE TABLE VERBALE_VIOLAZIONI (
+    Idverbale INT NOT NULL, -- Riferimento al verbale
+    Idviolazione INT NOT NULL, -- Riferimento al tipo di violazione
+    PRIMARY KEY (Idverbale, Idviolazione), -- Chiave primaria composta dalle colonne Idverbale e Idviolazione
+    FOREIGN KEY (Idverbale) REFERENCES VERBALE(Idverbale), -- Vincolo di chiave esterna verso la tabella VERBALE
+    FOREIGN KEY (Idviolazione) REFERENCES TIPO_VIOLAZIONE(Idviolazione) -- Vincolo di chiave esterna verso la tabella TIPO_VIOLAZIONE
+);
+
+
+
+----------------------------   	POPOLAMENTO TABELLE   -------------------------------------
+
+
+
+--  Popolamento della tabella ANAGRAFICA
+INSERT INTO ANAGRAFICA VALUES (1, 'Rossi', 'Mario', 'Via Roma 1', 'Palermo', '90100', 'RSSMRA80A01H501Z');
+INSERT INTO ANAGRAFICA VALUES (2, 'Bianchi', 'Luca', 'Via Milano 2', 'Roma', '00100', 'BNCLCU85B02F205X');
+INSERT INTO ANAGRAFICA VALUES (3, 'Verdi', 'Giulia', 'Via Firenze 10', 'Milano', '20100', 'VRDGLL90C12F205T');
+INSERT INTO ANAGRAFICA VALUES (4, 'Neri', 'Anna', 'Via Napoli 15', 'Napoli', '80100', 'NRNNNA92D23H501Y');
+INSERT INTO ANAGRAFICA VALUES (5, 'Gialli', 'Marco', 'Via Torino 20', 'Torino', '10100', 'GLLMRC85E34I201Z');
+
+
+-- Popolamento della tabella TIPO_VIOLAZIONE
+INSERT INTO TIPO_VIOLAZIONE VALUES (1, 'Eccesso di velocità', 150.00, 3);
+INSERT INTO TIPO_VIOLAZIONE VALUES (2, 'Sosta vietata', 80.00, 0);
+INSERT INTO TIPO_VIOLAZIONE VALUES (3, 'Guida in stato di ebbrezza', 500.00, 10);
+INSERT INTO TIPO_VIOLAZIONE VALUES (4, 'Uso del cellulare alla guida', 200.00, 5);
+INSERT INTO TIPO_VIOLAZIONE VALUES (5, 'Passaggio con semaforo rosso', 250.00, 6);
+INSERT INTO TIPO_VIOLAZIONE VALUES (6, 'Mancato utilizzo delle cinture di sicurezza', 100.00, 2);
+
+
+--  Popolamento della tabella VERBALE
+INSERT INTO VERBALE VALUES (1, '2009-03-15 10:00:00', 'Via Libertà 3', 'Agente A', '2009-03-16 09:00:00', 1);
+INSERT INTO VERBALE VALUES (2, '2009-06-20 11:00:00', 'Via Roma 5', 'Agente B', '2009-06-21 08:00:00', 2);
+INSERT INTO VERBALE VALUES (3, '2009-07-01 12:00:00', 'Via Dante 8', 'Agente A', NULL, 1);
+INSERT INTO VERBALE VALUES (4, '2009-08-15 14:00:00', 'Via Firenze 12', 'Agente C', '2009-08-16 10:00:00', 3);
+INSERT INTO VERBALE VALUES (5, '2009-09-10 09:30:00', 'Via Napoli 18', 'Agente D', '2009-09-11 08:00:00', 4);
+INSERT INTO VERBALE VALUES (6, '2009-10-05 16:45:00', 'Via Torino 25', 'Agente E', '2009-10-06 11:00:00', 5);
+
+
+--  Popolamento della tabella VERBALE_VIOLAZIONI
+INSERT INTO VERBALE_VIOLAZIONI VALUES (1, 1);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (2, 2);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (3, 3);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (3, 1);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (4, 4);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (5, 5);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (6, 6);
+INSERT INTO VERBALE_VIOLAZIONI VALUES (6, 1); 
+
+
+
+
+----------------------------   	QUERY   -------------------------------------
+
+
+-- 1. Conteggio di tutti i verbali trascritti
+SELECT COUNT(*) AS ConteggioVerbali
+FROM VERBALE;
+
+
+-- 2. Conteggio dei verbali trascritti raggruppati per anagrafica
+SELECT Idanagrafica, COUNT(*) AS ConteggioVerbali
+FROM VERBALE
+GROUP BY Idanagrafica;
+
+
+-- 3. Conteggio dei verbali trascritti raggruppati per tipo di violazione
+SELECT Idviolazione, COUNT(*) AS ConteggioVerbali
+FROM VERBALE_VIOLAZIONI
+GROUP BY Idviolazione;
+
+
+-- 4. Totale dei punti decurtati per ogni anagrafica
+
+-- La query combina tre tabelle (VERBALE, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Calcola il totale dei punti decurtati per ogni anagrafica sommando i punti di tutte le violazioni 
+-- commesse da ciascuna persona, raggruppando i risultati per Idanagrafica.
+SELECT v.Idanagrafica, SUM(t.DecurtamentoPunti) AS TotalePuntiDecurtati
+FROM VERBALE v
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+GROUP BY v.Idanagrafica;
+
+
+-- 5. Cognome, Nome, Data violazione, Indirizzo violazione, importo e punti decurtati per tutti gli anagrafici residenti a Palermo
+
+-- La query combina quattro tabelle (VERBALE, ANAGRAFICA, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Seleziona il cognome, nome, data della violazione, indirizzo della violazione, importo e punti decurtati per tutte 
+-- le violazioni commesse da persone residenti a Palermo, filtrando i risultati per la città di residenza.
+SELECT a.Cognome, a.Nome, v.DataViolazione, v.IndirizzoViolazione, t.Importo, t.DecurtamentoPunti
+FROM VERBALE v
+JOIN ANAGRAFICA a ON v.Idanagrafica = a.Idanagrafica
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+WHERE a.Città = 'Palermo';
+
+
+-- 6. Cognome, Nome, Indirizzo, Data violazione, importo e punti decurtati per le violazioni fatte tra il febbraio 2009 e luglio 2009
+
+-- La query combina quattro tabelle (VERBALE, ANAGRAFICA, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Seleziona il cognome, nome, indirizzo, data della violazione, importo e punti decurtati per le violazioni commesse 
+-- tra febbraio 2009 e luglio 2009, filtrando i risultati per il periodo di tempo specificato.
+SELECT a.Cognome, a.Nome, a.Indirizzo, v.DataViolazione, t.Importo, t.DecurtamentoPunti
+FROM VERBALE v
+JOIN ANAGRAFICA a ON v.Idanagrafica = a.Idanagrafica
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+WHERE v.DataViolazione BETWEEN '2009-02-01' AND '2009-07-31';
+
+
+-- 7. Totale degli importi per ogni anagrafico
+
+-- La query combina tre tabelle (VERBALE, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Calcola il totale degli importi delle sanzioni per ogni persona sommando gli importi di tutte 
+-- le violazioni commesse da ciascuna anagrafica, raggruppando i risultati per Idanagrafica.
+SELECT v.Idanagrafica, SUM(t.Importo) AS TotaleImporti
+FROM VERBALE v
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+GROUP BY v.Idanagrafica;
+
+
+-- 8. Visualizzazione di tutti gli anagrafici residenti a Palermo
+SELECT * 
+FROM ANAGRAFICA 
+WHERE Città = 'Palermo';
+
+
+-- 9. Query che visualizza Data violazione, Importo e decurtamento punti relativi ad una certa data
+
+--La query combina tre tabelle (VERBALE, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Seleziona la data della violazione, l'importo della sanzione e i punti decurtati per tutte 
+-- le violazioni avvenute in una specifica data (2009-08-15 14:00:00), 
+-- filtrando i risultati per la data di violazione specificata.
+SELECT v.DataViolazione, t.Importo, t.DecurtamentoPunti
+FROM VERBALE v
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+WHERE v.DataViolazione = '2009-08-15 14:00:00';
+
+
+-- 10. Conteggio delle violazioni contestate raggruppate per Nominativo dell’agente di Polizia
+
+-- La query combina due tabelle (VERBALE e VERBALE_VIOLAZIONI) utilizzando un join.
+-- Calcola il numero totale di violazioni contestate, raggruppando i risultati per il nominativo 
+-- dell'agente di polizia che ha redatto i verbali, e restituisce il nome dell'agente insieme al conteggio delle violazioni.
+SELECT Nominativo_Agente, COUNT(*) AS ConteggioViolazioni
+FROM VERBALE v
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+GROUP BY Nominativo_Agente;
+
+
+-- 11. Cognome, Nome, Indirizzo, Data violazione, Importo e punti decurtati per tutte le violazioni che superino il decurtamento di 5 punti
+
+-- La query combina quattro tabelle (VERBALE, ANAGRAFICA, VERBALE_VIOLAZIONI, TIPO_VIOLAZIONE) utilizzando join. 
+-- Seleziona il cognome, nome, indirizzo, data della violazione, importo e punti decurtati per tutte le violazioni che comportano 
+-- una decurtazione di più di 5 punti dalla patente, filtrando i risultati in base ai punti decurtati.
+SELECT a.Cognome, a.Nome, a.Indirizzo, v.DataViolazione, t.Importo, t.DecurtamentoPunti
+FROM VERBALE v
+JOIN ANAGRAFICA a ON v.Idanagrafica = a.Idanagrafica
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+WHERE t.DecurtamentoPunti > 5;
+
+
+-- 12. Cognome, Nome, Indirizzo, Data violazione, Importo e punti decurtati per tutte le violazioni che superino l’importo di 400 euro
+
+-- La query combina quattro tabelle (VERBALE, ANAGRAFICA, VERBALE_VIOLAZIONI e TIPO_VIOLAZIONE) usando JOIN. 
+-- Ogni join associa i record basandosi sui campi chiave correlati. La clausola WHERE filtra i risultati per restituire solo le
+-- violazioni con un importo superiore a 400 euro. La query finale seleziona e restituisce i dettagli richiesti delle persone e delle loro violazioni.
+SELECT a.Cognome, a.Nome, a.Indirizzo, v.DataViolazione, t.Importo, t.DecurtamentoPunti
+FROM VERBALE v
+JOIN ANAGRAFICA a ON v.Idanagrafica = a.Idanagrafica
+JOIN VERBALE_VIOLAZIONI vv ON v.Idverbale = vv.Idverbale
+JOIN TIPO_VIOLAZIONE t ON vv.Idviolazione = t.Idviolazione
+WHERE t.Importo > 400.00;
